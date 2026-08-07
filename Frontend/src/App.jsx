@@ -1,29 +1,28 @@
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
 import './App.css'
-import { SignIn, SignInButton, SignOutButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react'
+import { SignInButton, SignedOutButton, SignedOut, SignedIn, UserButton } from '@clerk/react'
 
 function App() {
+
   return (
-    <div className="container">
-      <h1 className="title">Welcome to CodeRoom</h1>
+    <>
+      <SignedOut>
+        <h1>Welcome to app</h1>
+        <SignInButton mode="modal">
+          <button className='Sign up Please'></button>
+        </SignInButton>
+      </SignedOut>
 
-      <div className="auth-wrapper">
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button className="auth-btn">Sign In</button>
-          </SignInButton>
-        </SignedOut>
+      <SignedIn>
+        <SignOutButton />
+      </SignedIn>
 
-        <SignedIn>
-          <div className="user-controls">
-            <UserButton />
-            <SignOutButton>
-              <button className="auth-btn outline">Sign Out</button>
-            </SignOutButton>
-          </div>
-        </SignedIn>
-      </div>
-    </div>
+      <UserButton />
+    </>
   )
 }
 
 export default App
+

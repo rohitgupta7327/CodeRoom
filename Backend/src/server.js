@@ -1,12 +1,21 @@
 // console.log("Hey! From the server");
 import express from "express";
 import path from "path";
-
+import cors from "cors";
+import { serve } from "ingest/express";
 import { ENV } from "./lib/env.js";
 
 const app = express();
 
 const __dirname = path.resolve();
+
+//middle ware
+app.use(express.json());
+
+//credentials:true meaning??= server allows a browser to include cookies on request
+app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }))
+
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
 app.get("/book", (req, res) => {
 
