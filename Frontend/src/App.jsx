@@ -2,7 +2,7 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import { SignInButton, SignedOutButton, SignedOut, SignedIn, UserButton } from '@clerk/react'
+import { SignInButton, SignOutButton, SignedOut, SignedIn, UserButton } from '@clerk/clerk-react'
 
 function App() {
 
