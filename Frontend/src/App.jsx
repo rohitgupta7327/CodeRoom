@@ -5,22 +5,27 @@ import './App.css'
 import { SignInButton, SignOutButton, SignedOut, SignedIn, UserButton } from '@clerk/clerk-react'
 
 function App() {
-
   return (
-    <>
-      <SignedOut>
-        <h1>Welcome to app</h1>
-        <SignInButton mode="modal">
-          <button className='Sign up Please'></button>
-        </SignInButton>
-      </SignedOut>
+    <div className="container">
+      <h1 className="title">Welcome to CodeRoom</h1>
 
-      <SignedIn>
-        <SignOutButton />
-      </SignedIn>
+      <div className="auth-wrapper">
+        <SignedOut>
+          <SignInButton mode="modal">
+            <button className="auth-btn">Sign In / Register</button>
+          </SignInButton>
+        </SignedOut>
 
-      <UserButton />
-    </>
+        <SignedIn>
+          <div className="user-controls">
+            <UserButton />
+            <SignOutButton>
+              <button className="auth-btn outline">Sign Out</button>
+            </SignOutButton>
+          </div>
+        </SignedIn>
+      </div>
+    </div>
   )
 }
 
