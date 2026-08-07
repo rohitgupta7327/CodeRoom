@@ -1,6 +1,9 @@
 import mongoose from "mongoose"
-
+import dns from "dns"
 import { ENV } from "./env.js"
+
+// Set custom DNS servers to prevent DNS SRV resolution issues on Windows
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 export const connectDB = async () => {
 
