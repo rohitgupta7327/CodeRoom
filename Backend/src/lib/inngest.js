@@ -27,7 +27,8 @@ const syncUser = inngest.createFunction(
                 profileImage: image_url,
             };
 
-            return await User.create(newUser);
+            // .lean() returns a plain JavaScript object instead of a complex Mongoose document
+            return await User.create(newUser).then((doc) => doc.toObject());
         });
 
         return { success: true, userId: createdUser._id };
@@ -44,7 +45,7 @@ const deleteUserFromDB = inngest.createFunction(
         ],
     },
     async ({ event, step }) => {
-        await step.run("delete-user-from-db", async () => {
+        await step.run("remove-user-from-db", async () => {
             await connectDB();
             const { id } = event.data;
 
