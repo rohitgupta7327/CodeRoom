@@ -1,16 +1,20 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
+import dns from "dns"
+import { ENV } from "./env.js"
 
-import { ENV } from "./env.js";
+// Set custom DNS servers to prevent DNS SRV resolution issues on Windows
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 export const connectDB = async () => {
+
     try {
-        if (!ENV.DB_URL) {
-            throw new Error("DB_URL is not defined in environment variables");
-        }
-        const conn = await mongoose.connect(ENV.DB_URL);
-        console.log("✅ Connected to MongoDB:", conn.connection.host);
-    } catch (error) {
-        console.error("❌ Error connecting to MongoDB", error);
-        process.exit(1); // 0 means success, 1 means failure
+        const conn = await mongoose.connect(ENV.DB_URL)
+        console.log("connected to MongoDB:", conn.connection.host);
+    }
+    catch (error) {
+        console.log("Error connecting to MongoDB:", error.message);
+        process.exit(1)
     }
 };
+
+
