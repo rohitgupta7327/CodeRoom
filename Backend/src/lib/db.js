@@ -1,17 +1,21 @@
 import mongoose from "mongoose";
-import dns from "dns";
 import { ENV } from "./env.js";
 
+let isConnected = false;
 
 export const connectDB = async () => {
+    if (isConnected) {
+        return;
+    }
+
     try {
-        if (!ENV.DB_URL) {
-            throw new Error("DB_URL is not defined in environment variables");
-        }
-        const conn = await mongoose.connect(ENV.DB_URL);
-        console.log("✅ Connected to MongoDB:", conn.connection.host);
+        const conn = await mongoose.connect(ENV.DB_URL, {
+            serverSelectionTimeoutMS: 5000, // Fail fast (5s) instead of timing out Vercel
+        });
+        isConnected = conn.connections[0].readyState === 1;
+        console.log("Connected to MongoDB:", conn.connection.host);
     } catch (error) {
-        console.error("❌ Error connecting to MongoDB", error);
-        process.exit(1); // 0 means success, 1 means failure
+        console.error("Error connecting to MongoDB:", error.message);
+        throw error;
     }
 };
