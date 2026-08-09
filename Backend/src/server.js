@@ -30,9 +30,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
 
-app.get("/video-call", protectRoute, (req, res) => {
-  res.status(200).json({ msg: "this is a protected route" });
-});
+
 
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
@@ -48,7 +46,7 @@ const startServer = async () => {
     app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
     await connectDB();
   } catch (error) {
-    console.error("💥 Error during server startup / DB connection", error);
+    console.error("Error during server startup / DB connection", error);
   }
 };
 
