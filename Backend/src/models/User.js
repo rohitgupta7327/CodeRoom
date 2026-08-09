@@ -19,12 +19,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true, // Explicitly index clerkId
     },
   },
   { timestamps: true }
 );
 
-// Prevents Mongoose "OverwriteModelError" during Vercel hot-reloads
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;
