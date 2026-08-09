@@ -11,8 +11,8 @@ const syncUser = inngest.createFunction(
     {
         id: "sync-user",
         triggers: [
-            { event: "clerk/user.created" },
-            { event: "user.created" },
+        { event: "clerk/user.created" },
+        { event: "user.created" },
         ],
     },
     async ({ event, step }) => {

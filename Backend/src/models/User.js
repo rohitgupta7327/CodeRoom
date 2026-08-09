@@ -1,29 +1,30 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+    clerkId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
   },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  profileImage: {
-    type: String,
-    default: "",
-  },
-  clearkId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-},
-  { timestamps: true } // createdAt , updatedAt
+  { timestamps: true }
 );
 
-// member size
-const User = mongoose.model('User', userSchema);
+// Prevents Mongoose "OverwriteModelError" during Vercel hot-reloads
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;
