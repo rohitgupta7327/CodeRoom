@@ -1,6 +1,8 @@
 import { Inngest } from "inngest";
 import { connectDB } from "./db.js";
 import User from "../models/User.js";
+import { upsertStreamUser, deleteStreamUser } from "./stream.js";
+
 
 export const inngest = new Inngest({
     id: "CodeRoom",
@@ -45,6 +47,14 @@ const syncUser = inngest.createFunction(
             return user;
         });
 
+        await step.run("sync-user-to-stream", async () => {
+            await upsertStreamUser({
+                id: createdUser.clerkId.toString(),
+                name: createdUser.name,
+                image: createdUser.profileImage,
+            });
+        });
+
         return { success: true, userId: createdUser._id };
     }
 );
@@ -71,14 +81,18 @@ const deleteUserFromDB = inngest.createFunction(
             }
 
             // Delete by clerkId (and fallback to clearkId if old misspelled documents exist)
-            const deleteResult = await User.deleteOne({
+            await User.deleteOne({
                 $or: [{ clerkId: targetId }, { clearkId: targetId }],
             });
 
             return {
                 targetId: targetId,
-                deletedCount: deleteResult.deletedCount,
             };
+        });
+
+        // delete user from stream 
+        await step.run("delete-user-from-stream", async () => {
+            await deleteStreamUser(result.targetId.toString());
         });
 
         return { success: true, result };
