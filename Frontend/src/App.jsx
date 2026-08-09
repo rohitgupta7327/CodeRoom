@@ -1,31 +1,27 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import { SignInButton, SignOutButton, SignedOut, SignedIn, UserButton } from '@clerk/clerk-react'
+import { SignInButton, SignOutButton, SignedOut, SignedIn, UserButton, useUser } from '@clerk/clerk-react'
+import { Navigate, Route, Routes } from "react-router";
+import HomePage from './pages/HomePage'
+import AboutPage from './pages/AboutPage'
+import DashboardPage from './pages/Dashboard'
+import ProblemsPage from './pages/ProblemsPage'
 
 function App() {
+
+  const { isSignedIn } = useUser();
   return (
-    <div className="container">
-      <h1 className="title">Welcome to CodeRoom</h1>
+    <>
+      <Routes>
+        <h1 className='text-red-500 bg-orange-400 p-10 text-3xl'>Welcome to the app</h1>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<HomePage />} />
+        <Route path="/problems" element={isSignedIn ? <ProblemsPage /> : <Navigate to={"/"} />} />
 
-      <div className="auth-wrapper">
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button className="auth-btn">Sign In / Register</button>
-          </SignInButton>
-        </SignedOut>
+      </Routes>
 
-        <SignedIn>
-          <div className="user-controls">
-            <UserButton />
-            <SignOutButton>
-              <button className="auth-btn outline">Sign Out</button>
-            </SignOutButton>
-          </div>
-        </SignedIn>
-      </div>
-    </div>
+      <Toaster />
+    </>
   )
 }
 
