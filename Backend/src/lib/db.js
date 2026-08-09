@@ -18,7 +18,7 @@ export const connectDB = async () => {
 
     try {
         const conn = await mongoose.connect(ENV.DB_URL, {
-            serverSelectionTimeoutMS: 5000, // Fail fast (5s) instead of timing out Vercel
+            serverSelectionTimeoutMS: 5000,
         });
         isConnected = conn.connections[0].readyState === 1;
         console.log("Connected to MongoDB:", conn.connection.host);
