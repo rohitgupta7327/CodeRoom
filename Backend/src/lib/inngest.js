@@ -96,6 +96,9 @@ const deleteUserFromDB = inngest.createFunction(
         });
 
         return { success: true, result };
+
+
+        // we can send a welcome email here later
     }
 );
 
