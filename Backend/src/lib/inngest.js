@@ -11,24 +11,38 @@ const syncUser = inngest.createFunction(
     {
         id: "sync-user",
         triggers: [
-        { event: "clerk/user.created" },
-        { event: "user.created" },
+            { event: "clerk/user.created" },
+            { event: "user.created" },
         ],
     },
     async ({ event, step }) => {
         const createdUser = await step.run("save-user-to-db", async () => {
             await connectDB();
-            const { id, email_addresses, first_name, last_name, image_url } = event.data;
 
-            const newUser = {
-                clerkId: id,
-                email: email_addresses?.[0]?.email_address,
-                name: `${first_name ?? ""} ${last_name ?? ""}`.trim(),
-                profileImage: image_url,
-            };
+            // Safely handle both event.data and nested event.data.data structures
+            const payload = event.data?.data || event.data;
+            const { id, email_addresses, first_name, last_name, image_url } = payload;
 
-            // .lean() returns a plain JavaScript object instead of a complex Mongoose document
-            return await User.create(newUser).then((doc) => doc.toObject());
+            if (!id) {
+                throw new Error("Clerk User ID is missing in event payload");
+            }
+
+            const email = email_addresses?.[0]?.email_address;
+            const name = `${first_name ?? ""} ${last_name ?? ""}`.trim() || "User";
+
+            // findOneAndUpdate with upsert prevents duplicate key errors and creates/updates safely
+            const user = await User.findOneAndUpdate(
+                { clerkId: id },
+                {
+                    clerkId: id,
+                    email: email,
+                    name: name,
+                    profileImage: image_url ?? "",
+                },
+                { upsert: true, new: true }
+            ).lean();
+
+            return user;
         });
 
         return { success: true, userId: createdUser._id };
@@ -45,14 +59,29 @@ const deleteUserFromDB = inngest.createFunction(
         ],
     },
     async ({ event, step }) => {
-        await step.run("remove-user-from-db", async () => {
+        const result = await step.run("remove-user-from-db", async () => {
             await connectDB();
-            const { id } = event.data;
 
-            await User.deleteOne({ clerkId: id });
+            // Extract ID safely across payload formats
+            const payload = event.data?.data || event.data;
+            const targetId = payload?.id;
+
+            if (!targetId) {
+                throw new Error("Clerk User ID is missing in deletion event payload");
+            }
+
+            // Delete by clerkId (and fallback to clearkId if old misspelled documents exist)
+            const deleteResult = await User.deleteOne({
+                $or: [{ clerkId: targetId }, { clearkId: targetId }],
+            });
+
+            return {
+                targetId: targetId,
+                deletedCount: deleteResult.deletedCount,
+            };
         });
 
-        return { success: true };
+        return { success: true, result };
     }
 );
 
