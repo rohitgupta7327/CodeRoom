@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
+import dns from "dns";
 import { ENV } from "./env.js";
+
+// Bypass local ISP/Router DNS blocks for MongoDB Atlas SRV records
+try {
+    dns.setServers(["8.8.8.8", "8.8.4.4"]);
+} catch (e) {
+    // fallback if setServers throws
+}
 
 let isConnected = false;
 

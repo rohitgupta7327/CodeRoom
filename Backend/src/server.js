@@ -10,6 +10,7 @@ import { inngest, functions } from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
+import { protectRoute } from "./middleware/protectRoute.js";
 
 const app = express();
 
@@ -29,6 +30,10 @@ app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
 
+app.get("/video-call", protectRoute, (req, res) => {
+  res.status(200).json({ msg: "this is a protected route" });
+});
+
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
@@ -40,10 +45,10 @@ if (ENV.NODE_ENV === "production") {
 
 const startServer = async () => {
   try {
-    await connectDB();
     app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
+    await connectDB();
   } catch (error) {
-    console.error("💥 Error starting the server", error);
+    console.error("💥 Error during server startup / DB connection", error);
   }
 };
 
