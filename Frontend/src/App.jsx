@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { SignInButton, SignOutButton, SignedOut, SignedIn, UserButton, useUser } from '@clerk/clerk-react'
 import { Navigate, Route, Routes } from "react-router";
@@ -8,9 +8,21 @@ import AboutPage from './pages/AboutPage'
 import DashboardPage from './pages/DashboardPage'
 import ProblemsPage from './pages/ProblemsPage'
 import ProblemPage from './pages/ProblemPage'
+import SessionPage from './pages/SessionPage'
+
 function App() {
 
   const { isSignedIn, isLoaded } = useUser();
+
+  useEffect(() => {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.includes("react-resizable-panels") || key.includes("workspace") || key.includes("editor-output")) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
+  }, []);
 
   // this will get rid of blank screen during loading
   if (!isLoaded) return null;
@@ -21,9 +33,9 @@ function App() {
         <Route path="/" element={!isSignedIn ? <HomePage /> : <Navigate to={"/dashboard"} />} />
         <Route path="/dashboard" element={isSignedIn ? <DashboardPage /> : <Navigate to={"/"} />} />
 
-
-        <Route path="/problems/:id" element={isSignedIn ? <ProblemsPage /> : <Navigate to={"/"} />} />
+        <Route path="/problems" element={isSignedIn ? <ProblemsPage /> : <Navigate to={"/"} />} />
         <Route path="/problem/:id" element={isSignedIn ? <ProblemPage /> : <Navigate to={"/"} />} />
+        <Route path="/session/:id" element={isSignedIn ? <SessionPage /> : <Navigate to={"/"} />} />
 
       </Routes>
 

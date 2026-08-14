@@ -6,7 +6,8 @@ import {
     getMyRecentSession,
     getSessionById,
     joinSession,
-    endSession
+    endSession,
+    leaveSession
 } from "../controllers/sessionController.js";
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get("/my-recent", protectRoute, getMyRecentSession);
 router.get("/:id", protectRoute, getSessionById);
 
 router.post("/:id/join", protectRoute, joinSession);
+router.post("/:id/leave", protectRoute, leaveSession);
 router.post("/:id/end", protectRoute, endSession);
 export default router;

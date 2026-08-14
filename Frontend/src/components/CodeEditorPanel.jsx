@@ -13,7 +13,7 @@ function CodeEditorPanel({
     return (
         <div className="h-full bg-base-300 flex flex-col">
             {/* Header / Actions Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-base-100 border-b border-base-300">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-base-100 border-b border-base-300">
                 <div className="flex items-center gap-3">
                     <img
                         src={LANGUAGE_CONFIG[selectedLanguage]?.icon}

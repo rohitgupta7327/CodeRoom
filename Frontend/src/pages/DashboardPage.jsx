@@ -21,6 +21,9 @@ function DashboardPage() {
     const { data: activeSessionsData, isLoading: loadingActiveSessions } = useActiveSessions();
     const { data: recentSessionsData, isLoading: loadingRecentSessions } = useMyRecentSessions();
 
+
+    // Creating Rooms Method
+
     const handleCreateRoom = () => {
         if (!roomConfig.problem || !roomConfig.difficulty) return;
 
@@ -54,8 +57,8 @@ function DashboardPage() {
                 <WelcomeSection onCreateSession={() => setShowCreateModal(true)} />
 
                 {/* Grid layout */}
-                <div className="container mx-auto px-6 pb-16">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         <StatsCards
                             activeSessionsCount={activeSessions.length}
                             recentSessionsCount={recentSessions.length}

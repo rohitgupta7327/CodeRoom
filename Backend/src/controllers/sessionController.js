@@ -1,6 +1,41 @@
 import { chatClient, streamClient } from "../lib/stream.js";
 import Session from "../models/Session.js";
 
+
+// if session is not used by user till 30 min it ends up session automatically
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
+export async function cleanExpiredSessions() {
+    try {
+        const cutoff = new Date(Date.now() - INACTIVITY_TIMEOUT_MS);
+        const expiredSessions = await Session.find({
+            status: "active",
+            $or: [
+                { lastActivity: { $lt: cutoff } },
+                { lastActivity: { $exists: false }, updatedAt: { $lt: cutoff } },
+            ],
+        });
+
+        for (const session of expiredSessions) {
+            session.status = "completed";
+            await session.save();
+
+            try {
+                if (session.callId) {
+                    const call = streamClient.video.call("default", session.callId);
+                    await call.delete({ hard: true });
+                    const channel = chatClient.channel("messaging", session.callId);
+                    await channel.delete();
+                }
+            } catch (streamError) {
+                console.log("Stream cleanup error for expired session:", streamError.message);
+            }
+        }
+    } catch (error) {
+        console.log("Error cleaning expired sessions:", error.message);
+    }
+}
+
 export async function createSession(req, res) {
     try {
         const { problem, difficulty } = req.body;
@@ -20,13 +55,19 @@ export async function createSession(req, res) {
             difficulty,
             host: userId,
             callId,
-            status: "active"
+            status: "active",
+            lastActivity: new Date(),
         });
 
-        // create call on stream using call id
-        await streamClient.calls.create("default", callId).getOrCreate({
+        // create call on stream using call id with a 2 participant limit
+        await streamClient.video.call("default", callId).getOrCreate({
             data: {
                 created_by_id: clerkId,
+                settings_override: {
+                    limits: {
+                        max_participants: 2,
+                    },
+                },
                 custom: { problem, difficulty, sessionId: session._id.toString() }
             },
         });
@@ -45,10 +86,17 @@ export async function createSession(req, res) {
     }
 }
 
-export async function getActiveSession(_, res) {
+export async function getActiveSession(req, res) {
     try {
-        const sessions = await Session.find({ status: "active" })
+        await cleanExpiredSessions();
+        const userId = req.user._id;
+
+        const sessions = await Session.find({
+            status: "active",
+            $or: [{ host: userId }, { participant: userId }],
+        })
             .populate("host", "name profileImage email clerkId")
+            .populate("participant", "name profileImage email clerkId")
             .sort({ createdAt: -1 })
             .limit(20);
 
@@ -88,6 +136,29 @@ export async function getSessionById(req, res) {
 
         if (!session) return res.status(404).json({ message: "Session not found" });
 
+        const cutoff = new Date(Date.now() - INACTIVITY_TIMEOUT_MS);
+        const lastActiveTime = session.lastActivity || session.updatedAt;
+
+        if (session.status === "active" && lastActiveTime < cutoff) {
+            session.status = "completed";
+            await session.save();
+
+            try {
+                const call = streamClient.video.call("default", session.callId);
+                await call.delete({ hard: true });
+                const channel = chatClient.channel("messaging", session.callId);
+                await channel.delete();
+            } catch (e) { }
+
+            return res.status(200).json({ session });
+        }
+
+        // Refresh lastActivity timestamp for active sessions being accessed
+        if (session.status === "active") {
+            session.lastActivity = new Date();
+            await session.save();
+        }
+
         res.status(200).json({ session });
     } catch (error) {
         console.log("Error in getSessionById controller:", error.message);
@@ -117,6 +188,7 @@ export async function joinSession(req, res) {
         if (session.participant) return res.status(409).json({ message: "Session is full" });
 
         session.participant = userId;
+        session.lastActivity = new Date();
         await session.save();
 
         const channel = chatClient.channel("messaging", session.callId);
@@ -165,3 +237,41 @@ export async function endSession(req, res) {
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
+
+export async function leaveSession(req, res) {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+        const clerkId = req.user.clerkId;
+
+        const session = await Session.findById(id);
+
+        if (!session) return res.status(404).json({ message: "Session not found" });
+
+        if (session.status !== "active") {
+            return res.status(400).json({ message: "Cannot leave a non-active session" });
+        }
+
+        // Check if user is the participant
+        if (session.participant && session.participant.toString() === userId.toString()) {
+            session.participant = null;
+            session.lastActivity = new Date();
+            await session.save();
+
+            try {
+                const channel = chatClient.channel("messaging", session.callId);
+                await channel.removeMembers([clerkId]);
+            } catch (streamError) {
+                console.log("Error removing member from channel:", streamError.message);
+            }
+
+            return res.status(200).json({ session, message: "Left session successfully" });
+        }
+
+        return res.status(400).json({ message: "User is not a participant in this session" });
+    } catch (error) {
+        console.log("Error in leaveSession controller:", error.message);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
