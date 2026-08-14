@@ -6,6 +6,18 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { BrowserRouter } from "react-router";
 import { QueryClientProvider, QueryClient, } from "@tanstack/react-query";
 
+// Prevent Monaco Editor internal cancellation errors from cluttering the console
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason;
+  if (
+    reason === "Canceled" ||
+    reason?.message === "Canceled" ||
+    reason?.name === "Canceled"
+  ) {
+    event.preventDefault();
+  }
+});
+
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {

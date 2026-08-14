@@ -10,6 +10,7 @@ import { inngest, functions } from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
+import { cleanExpiredSessions } from "./controllers/sessionController.js";
 import { protectRoute } from "./middleware/protectRoute.js";
 
 const app = express();
@@ -45,6 +46,11 @@ const startServer = async () => {
   try {
     app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
     await connectDB();
+
+    // Periodically clean up sessions that have been unused for 30 minutes
+    setInterval(() => {
+      cleanExpiredSessions();
+    }, 2 * 60 * 1000);
   } catch (error) {
     console.error("Error during server startup / DB connection", error);
   }
