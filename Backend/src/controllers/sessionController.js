@@ -18,6 +18,7 @@ export async function cleanExpiredSessions() {
 
         for (const session of expiredSessions) {
             session.status = "completed";
+            if (!session.endedAt) session.endedAt = new Date();
             await session.save();
 
             try {
@@ -116,6 +117,8 @@ export async function getMyRecentSession(req, res) {
             status: "completed",
             $or: [{ host: userId }, { participant: userId }],
         })
+            .populate("host", "name profileImage email clerkId")
+            .populate("participant", "name profileImage email clerkId")
             .sort({ createdAt: -1 })
             .limit(20);
 
@@ -141,6 +144,7 @@ export async function getSessionById(req, res) {
 
         if (session.status === "active" && lastActiveTime < cutoff) {
             session.status = "completed";
+            if (!session.endedAt) session.endedAt = new Date();
             await session.save();
 
             try {
@@ -229,6 +233,7 @@ export async function endSession(req, res) {
         await channel.delete();
 
         session.status = "completed";
+        if (!session.endedAt) session.endedAt = new Date();
         await session.save();
 
         res.status(200).json({ session, message: "Session ended successfully" });

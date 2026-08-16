@@ -11,18 +11,29 @@ import CodeEditorPanel from "../components/CodeEditorPanel";
 import VideoCallPanel from "../components/VideoCallPanel";
 import { executeCode } from "../lib/piston";
 import { useEndSession, useJoinSession, useLeaveSession, useSessionById } from "../hooks/useSessions";
-import { getDifficultyBadgeClass } from "../lib/utils";
+import {
+  formatSessionDate,
+  formatSessionDuration,
+  formatSessionTime,
+  getDifficultyBadgeClass,
+} from "../lib/utils";
 
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import {
+  ArrowLeftIcon,
   BookOpenIcon,
+  CalendarIcon,
+  CheckCircle2Icon,
+  ClockIcon,
   Code2Icon,
   CopyIcon,
+  CrownIcon,
   LoaderIcon,
   LockIcon,
   LogOutIcon,
   TerminalIcon,
+  TimerIcon,
   UserPlusIcon,
   UsersIcon,
   VideoIcon,
@@ -187,21 +198,206 @@ function SessionPage() {
   const isIncomplete = session.status === "incomplete";
 
   if (isCompleted || isIncomplete) {
+    const createdDate = formatSessionDate(session.createdAt);
+    const startTime = formatSessionTime(session.createdAt);
+    const endTime = formatSessionTime(
+      session.endedAt || session.updatedAt || session.lastActivity
+    );
+    const duration = formatSessionDuration(
+      session.createdAt,
+      session.endedAt || session.updatedAt || session.lastActivity
+    );
+
     return (
-      <div className="min-h-screen bg-base-300 flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-3xl font-bold mb-3">
-          {isCompleted ? "Session Completed" : isIncomplete ? "Session Incomplete" : "Session Not Found"}
-        </h2>
-        <p className="text-base-content/70 mb-6 max-w-md">
-          {isCompleted
-            ? "This session was successfully completed and ended by the session creator."
-            : isIncomplete
-              ? "This session was not ended by the session creator and was automatically marked as incomplete after 30 minutes of inactivity."
-              : "The requested session does not exist."}
-        </p>
-        <button className="btn btn-primary" onClick={() => navigate("/dashboard")}>
-          Back to Dashboard
-        </button>
+      <div className="min-h-screen bg-base-300 flex flex-col">
+        <Navbar />
+        <div className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+          <div className="card bg-base-100 border-2 border-primary/20 shadow-xl overflow-hidden">
+            {/* CARD HEADER */}
+            <div className="bg-gradient-to-r from-primary/10 via-base-100 to-secondary/10 p-6 sm:p-8 border-b border-base-300">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+                >
+                  <ArrowLeftIcon className="size-4" />
+                  Back to Dashboard
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {isCompleted ? (
+                    <span className="badge badge-success gap-1 px-3 py-2 font-semibold">
+                      <CheckCircle2Icon className="size-3.5" />
+                      Session Completed
+                    </span>
+                  ) : (
+                    <span className="badge badge-warning gap-1 px-3 py-2 font-semibold">
+                      <ClockIcon className="size-3.5" />
+                      Session Incomplete
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="size-14 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center shrink-0">
+                  <Code2Icon className="size-7" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-black">{session.problem}</h1>
+                    <span className={`badge ${getDifficultyBadgeClass(session.difficulty)}`}>
+                      {session.difficulty}
+                    </span>
+                  </div>
+                  <p className="text-sm opacity-70 mt-1">
+                    {isCompleted
+                      ? "This session was completed and ended."
+                      : "This session ended automatically due to inactivity."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD BODY METRICS */}
+            <div className="p-6 sm:p-8 space-y-6">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-base-content/60">
+                Session Timings & Overview
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* CREATED DATE */}
+                <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0">
+                    <CalendarIcon className="size-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">
+                      Created Date
+                    </span>
+                    <span className="text-base font-bold text-base-content truncate block">
+                      {createdDate}
+                    </span>
+                  </div>
+                </div>
+
+                {/* START TIME */}
+                <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-3">
+                  <div className="p-3 bg-secondary/10 rounded-xl text-secondary shrink-0">
+                    <ClockIcon className="size-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">
+                      Start Time
+                    </span>
+                    <span className="text-base font-bold text-base-content truncate block">
+                      {startTime}
+                    </span>
+                  </div>
+                </div>
+
+                {/* SESSION END TIMING */}
+                <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-3">
+                  <div className="p-3 bg-accent/10 rounded-xl text-accent shrink-0">
+                    <CheckCircle2Icon className="size-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">
+                      End Timing
+                    </span>
+                    <span className="text-base font-bold text-base-content truncate block">
+                      {endTime}
+                    </span>
+                  </div>
+                </div>
+
+                {/* DURATION */}
+                <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-3">
+                  <div className="p-3 bg-warning/10 rounded-xl text-warning shrink-0">
+                    <TimerIcon className="size-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wider block">
+                      Total Duration
+                    </span>
+                    <span className="text-base font-bold text-base-content truncate block">
+                      {duration}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* PARTICIPANTS */}
+              <div className="pt-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-base-content/60 mb-3">
+                  Participants
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* HOST */}
+                  <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-4">
+                    {session.host?.profileImage ? (
+                      <img
+                        src={session.host.profileImage}
+                        alt={session.host.name}
+                        className="size-12 rounded-full object-cover border-2 border-primary"
+                      />
+                    ) : (
+                      <div className="size-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                        <CrownIcon className="size-6" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-primary uppercase">Host</span>
+                      <p className="font-bold text-base truncate">{session.host?.name || "Session Host"}</p>
+                      {session.host?.email && (
+                        <p className="text-xs opacity-60 truncate">{session.host.email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* PARTICIPANT */}
+                  <div className="bg-base-200 border border-base-300 p-4 rounded-2xl flex items-center gap-4">
+                    {session.participant?.profileImage ? (
+                      <img
+                        src={session.participant.profileImage}
+                        alt={session.participant.name}
+                        className="size-12 rounded-full object-cover border-2 border-secondary"
+                      />
+                    ) : session.participant ? (
+                      <div className="size-12 rounded-full bg-secondary/20 text-secondary flex items-center justify-center font-bold">
+                        <UsersIcon className="size-6" />
+                      </div>
+                    ) : (
+                      <div className="size-12 rounded-full bg-base-300 text-base-content/40 flex items-center justify-center">
+                        <UsersIcon className="size-6" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-secondary uppercase">Participant</span>
+                      {session.participant ? (
+                        <>
+                          <p className="font-bold text-base truncate">{session.participant.name}</p>
+                          {session.participant.email && (
+                            <p className="text-xs opacity-60 truncate">{session.participant.email}</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm opacity-50 italic">No participant joined</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ACTION FOOTER */}
+              <div className="pt-4 flex justify-end">
+                <button className="btn btn-primary" onClick={() => navigate("/dashboard")}>
+                  Return to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

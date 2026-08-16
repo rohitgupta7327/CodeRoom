@@ -33,6 +33,10 @@ const sessionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    endedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
