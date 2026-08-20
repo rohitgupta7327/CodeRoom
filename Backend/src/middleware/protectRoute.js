@@ -20,4 +20,4 @@ export const protectRoute = async (req, res, next) => {
         console.log("Error in ProtectRoute:", error);
         res.status(401).json({ message: "Unauthorized", error: error.message });
     }
-};
+};

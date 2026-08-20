@@ -18,9 +18,31 @@ import { protectRoute } from "./middleware/protectRoute.js";
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  ENV.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
+
+const corsOriginHandler = (origin, callback) => {
+  // Allow requests with no origin (like mobile apps, Postman, server-to-server)
+  if (!origin) return callback(null, true);
+
+  const isAllowed =
+    allowedOrigins.includes(origin) ||
+    origin.endsWith(".vercel.app") ||
+    (ENV.NODE_ENV !== "production" && origin.includes("localhost"));
+
+  if (isAllowed) {
+    return callback(null, true);
+  } else {
+    return callback(new Error(`CORS policy violation: Origin ${origin} is not allowed`));
+  }
+};
+
 const io = new Server(server, {
   cors: {
-    origin: [ENV.CLIENT_URL, "http://localhost:5173", "http://localhost:3000"].filter(Boolean),
+    origin: corsOriginHandler,
     credentials: true,
   },
   transports: ["websocket", "polling"],
@@ -113,8 +135,8 @@ const __dirname = path.resolve();
 
 // middleware
 app.use(express.json());
-// credentials:true meaning?? => server allows a browser to include cookies on request
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+// credentials:true allows cross-origin auth tokens and headers
+app.use(cors({ origin: corsOriginHandler, credentials: true }));
 app.use(clerkMiddleware()); // this adds auth field to request object: req.auth()
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
