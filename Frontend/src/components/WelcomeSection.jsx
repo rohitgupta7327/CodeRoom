@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
-import { ArrowRightIcon, SparklesIcon, ZapIcon } from "lucide-react";
+import { ArrowRightIcon, LogInIcon, SparklesIcon, ZapIcon } from "lucide-react";
 
-function WelcomeSection({ onCreateSession }) {
+function WelcomeSection({ onCreateSession, onJoinSession }) {
     const { user } = useUser();
 
     return (
@@ -21,16 +21,31 @@ function WelcomeSection({ onCreateSession }) {
                             Ready to level up your coding skills?
                         </p>
                     </div>
-                    <button
-                        onClick={onCreateSession}
-                        className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-primary to-secondary rounded-2xl transition-all duration-200 hover:opacity-90 shrink-0 cursor-pointer"
-                    >
-                        <div className="flex items-center justify-center gap-3 text-white font-bold text-base sm:text-lg">
-                            <ZapIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            <span>Create Session</span>
-                            <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                    </button>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
+                        {/* CREATE SESSION BUTTON */}
+                        <button
+                            onClick={onCreateSession}
+                            className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-primary to-secondary rounded-2xl transition-all duration-200 hover:opacity-90 cursor-pointer shadow-lg hover:shadow-primary/20"
+                        >
+                            <div className="flex items-center justify-center gap-3 text-white font-bold text-base sm:text-lg">
+                                <ZapIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <span>Create Session</span>
+                                <ArrowRightIcon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                        </button>
+
+                        {/* JOIN SESSION BUTTON */}
+                        <button
+                            onClick={onJoinSession}
+                            className="group w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-base-200 hover:bg-base-100 border-2 border-accent/40 hover:border-accent text-base-content rounded-2xl transition-all duration-200 cursor-pointer shadow-lg hover:shadow-accent/20"
+                        >
+                            <div className="flex items-center justify-center gap-3 font-bold text-base sm:text-lg text-accent">
+                                <LogInIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <span>Join Session</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
