@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useUser } from "@clerk/clerk-react";
 import { PROBLEMS } from "../data/problems";
 import Navbar from "../components/Navbar";
+import { getSocket } from "../lib/socket";
 
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import ProblemDescription from "../components/ProblemDescription";
@@ -67,21 +68,119 @@ function SessionPage() {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  // Update starter code when problem or selected language changes
+  // Sync starter code when initial problem loads or session changes (if not yet modified)
   useEffect(() => {
-    if (currentProblem) {
-      setCode(currentProblem.starterCode[selectedLanguage] || "");
-      setOutput(null);
+    if (sessionProblemId && !selectedProblemId) {
+      const initProb = PROBLEMS[sessionProblemId] || PROBLEMS["two-sum"];
+      setCode(initProb.starterCode[selectedLanguage] || "");
     }
-  }, [currentProblemId, selectedLanguage]);
+  }, [sessionProblemId]);
+
+  // Socket setup for real-time collaborative sync (code, language, problem)
+  useEffect(() => {
+    if (!id) return;
+    const socket = getSocket();
+
+    socket.emit("join-session", {
+      sessionId: id,
+      user: {
+        id: currentUser?.id,
+        name: currentUser?.fullName || currentUser?.username || "User",
+      },
+    });
+
+    const handleSyncState = (state) => {
+      if (state.selectedProblemId && PROBLEMS[state.selectedProblemId]) {
+        setSelectedProblemId(state.selectedProblemId);
+      }
+      if (state.selectedLanguage) {
+        setSelectedLanguage(state.selectedLanguage);
+      }
+      if (state.code !== undefined) {
+        setCode(state.code);
+      }
+    };
+
+    const handleCodeUpdate = ({ code: updatedCode }) => {
+      if (updatedCode !== undefined) {
+        setCode(updatedCode);
+      }
+    };
+
+    const handleProblemUpdate = ({ problemId, starterCode }) => {
+      if (problemId && PROBLEMS[problemId]) {
+        setSelectedProblemId(problemId);
+      }
+      if (starterCode !== undefined) {
+        setCode(starterCode);
+      }
+      setOutput(null);
+    };
+
+    const handleLanguageUpdate = ({ language, starterCode }) => {
+      if (language) {
+        setSelectedLanguage(language);
+      }
+      if (starterCode !== undefined) {
+        setCode(starterCode);
+      }
+      setOutput(null);
+    };
+
+    socket.on("sync-session-state", handleSyncState);
+    socket.on("code-update", handleCodeUpdate);
+    socket.on("problem-update", handleProblemUpdate);
+    socket.on("language-update", handleLanguageUpdate);
+
+    return () => {
+      socket.off("sync-session-state", handleSyncState);
+      socket.off("code-update", handleCodeUpdate);
+      socket.off("problem-update", handleProblemUpdate);
+      socket.off("language-update", handleLanguageUpdate);
+    };
+  }, [id, currentUser]);
+
+  const handleCodeChange = (newCode) => {
+    setCode(newCode);
+    const socket = getSocket();
+    if (id) {
+      socket.emit("code-change", { sessionId: id, code: newCode });
+    }
+  };
 
   const handleLanguageChange = (e) => {
-    setSelectedLanguage(e.target.value);
+    const newLang = e.target.value;
+    setSelectedLanguage(newLang);
+    const starterCode = currentProblem.starterCode[newLang] || "";
+    setCode(starterCode);
+    setOutput(null);
+
+    const socket = getSocket();
+    if (id) {
+      socket.emit("language-change", {
+        sessionId: id,
+        language: newLang,
+        starterCode,
+      });
+    }
   };
 
   const handleProblemChange = (newProblemId) => {
     if (PROBLEMS[newProblemId]) {
       setSelectedProblemId(newProblemId);
+      const newProblem = PROBLEMS[newProblemId];
+      const starterCode = newProblem.starterCode[selectedLanguage] || "";
+      setCode(starterCode);
+      setOutput(null);
+
+      const socket = getSocket();
+      if (id) {
+        socket.emit("problem-change", {
+          sessionId: id,
+          problemId: newProblemId,
+          starterCode,
+        });
+      }
     }
   };
 
@@ -516,33 +615,30 @@ function SessionPage() {
       {/* MOBILE TAB NAVIGATION (< md screens) */}
       <div className="md:hidden flex border-b border-base-300 bg-base-200 shrink-0">
         <button
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
-            activeTab === "description"
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${activeTab === "description"
               ? "bg-base-100 text-primary border-b-2 border-primary"
               : "text-base-content/70 hover:text-base-content"
-          }`}
+            }`}
           onClick={() => setActiveTab("description")}
         >
           <BookOpenIcon className="size-3.5" />
           Problem
         </button>
         <button
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
-            activeTab === "editor"
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${activeTab === "editor"
               ? "bg-base-100 text-primary border-b-2 border-primary"
               : "text-base-content/70 hover:text-base-content"
-          }`}
+            }`}
           onClick={() => setActiveTab("editor")}
         >
           <Code2Icon className="size-3.5" />
           Code
         </button>
         <button
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
-            activeTab === "output"
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${activeTab === "output"
               ? "bg-base-100 text-primary border-b-2 border-primary"
               : "text-base-content/70 hover:text-base-content"
-          }`}
+            }`}
           onClick={() => setActiveTab("output")}
         >
           <TerminalIcon className="size-3.5" />
@@ -550,11 +646,10 @@ function SessionPage() {
           {output && <span className="size-2 rounded-full bg-success animate-pulse ml-0.5" />}
         </button>
         <button
-          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
-            activeTab === "video"
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${activeTab === "video"
               ? "bg-base-100 text-primary border-b-2 border-primary"
               : "text-base-content/70 hover:text-base-content"
-          }`}
+            }`}
           onClick={() => setActiveTab("video")}
         >
           <VideoIcon className="size-3.5" />
@@ -578,7 +673,7 @@ function SessionPage() {
             code={code}
             isRunning={isRunning}
             onLanguageChange={handleLanguageChange}
-            onCodeChange={setCode}
+            onCodeChange={handleCodeChange}
             onRunCode={handleRunCode}
           />
         )}
@@ -616,7 +711,7 @@ function SessionPage() {
                       code={code}
                       isRunning={isRunning}
                       onLanguageChange={handleLanguageChange}
-                      onCodeChange={setCode}
+                      onCodeChange={handleCodeChange}
                       onRunCode={handleRunCode}
                     />
                   </Panel>
