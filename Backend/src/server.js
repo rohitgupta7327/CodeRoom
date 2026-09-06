@@ -147,6 +147,9 @@ app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
 
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "CodeRoom Backend API is live and running!" });
+});
 // make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
